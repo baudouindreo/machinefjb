@@ -1,0 +1,155 @@
+/* Styles généraux */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  color: #333;
+}
+
+h3 {
+  font-size: 1.5rem;
+  margin: 10px 0;
+}
+
+p {
+  margin: 5px 0;
+  font-size: 1rem;
+}
+
+/* Conteneur principal */
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 20px;
+  gap: 20px;
+}
+
+/* Carte de machine */
+.machine-card {
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 20px;
+  width: 300px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.machine-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Image de la machine */
+.machine-card img {
+  width: 100%;
+  max-width: 150px;
+  height: auto;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+/* Champs de saisie */
+.machine-card input {
+  width: calc(50% - 10px);
+  padding: 10px;
+  margin: 5px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.machine-card input:disabled {
+  background: #f9f9f9;
+  color: #aaa;
+  cursor: not-allowed;
+}
+
+/* Boutons */
+.machine-card button {
+  padding: 10px 20px;
+  margin: 5px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.machine-card button:disabled {
+  background-color: #ddd;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.machine-card button:first-of-type {
+  background-color: #4caf50;
+  color: white;
+}
+
+.machine-card button:first-of-type:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+.machine-card button:last-of-type {
+  background-color: #f44336;
+  color: white;
+}
+
+.machine-card button:last-of-type:hover:not(:disabled) {
+  background-color: #e53935;
+}
+
+/* Adaptation mobile */
+@media (max-width: 768px) {
+  .machine-card {
+    width: 90%;
+  }
+
+  .machine-card input {
+    width: calc(50% - 5px);
+  }
+
+  .container {
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  h3 {
+    font-size: 1.25rem;
+  }
+
+  .machine-card {
+    padding: 15px;
+    width: 100%;
+  }
+
+  .machine-card input {
+    width: 100%;
+    margin: 5px 0;
+  }
+
+  .machine-card button {
+    width: 100%;
+    margin: 5px 0;
+  }
+}
+
+.machine-card div {
+  display: flex;
+  align-items: center;
+  gap: 5px; /* Espace entre les champs et les unités */
+}
+
+.machine-card div input {
+  width: 60px;
+  text-align: center;
+}
+
+.machine-card div span {
+  font-size: 14px;
+  line-height: 1.5; /* Aligne verticalement les unités */
+}
