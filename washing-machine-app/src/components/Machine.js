@@ -20,27 +20,23 @@ function Machine({ name, id }) {
         console.error("Erreur lors du chargement des données :", error);
       } else if (data) {
         setIsRunning(data.is_running);
-        setRemainingTime(data.remaining_time);
+        setRemainingTime(data.remaining_time - Math.floor(Date.now() / 1000)); // Ajuster en fonction de l'heure actuelle
       }
     };
 
     fetchMachineData();
 
     // Écouter les mises à jour en temps réel
-    const channel = supabase
-      .channel("table-machines")
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "machines", filter: `id=eq.${id}` },
-        (payload) => {
-          setIsRunning(payload.new.is_running);
-          setRemainingTime(payload.new.remaining_time);
-        }
-      )
+    const subscription = supabase
+      .channel("public:machines")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "machines", filter: `id=eq.${id}` }, (payload) => {
+        setIsRunning(payload.new.is_running);
+        setRemainingTime(payload.new.remaining_time - Math.floor(Date.now() / 1000)); // Ajuster en fonction de l'heure actuelle
+      })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(subscription);
     };
   }, [id]);
 
@@ -55,7 +51,7 @@ function Machine({ name, id }) {
           supabase
             .from("machines")
             .update({
-              remaining_time: newTime > 0 ? newTime : 0,
+              remaining_time: Math.max(0, newTime + Math.floor(Date.now() / 1000)),
               is_running: newTime > 0,
             })
             .eq("id", id);
@@ -70,58 +66,49 @@ function Machine({ name, id }) {
   }, [isRunning, remainingTime, id]);
 
   const handleStart = async () => {
-    try {
-      const totalHours = parseInt(hours, 10) || 0;
-      const totalMinutes = parseInt(minutes, 10) || 0;
-      const totalSeconds = totalHours * 3600 + totalMinutes * 60;
+    const totalHours = parseInt(hours, 10) || 0;
+    const totalMinutes = parseInt(minutes, 10) || 0;
+    const totalSeconds = totalHours * 3600 + totalMinutes * 60;
 
-      if (totalSeconds > 0) {
-        setIsRunning(true);
-        setRemainingTime(totalSeconds);
+    if (totalSeconds > 0) {
+      const currentTimeUTC = Math.floor(Date.now() / 1000); // Heure actuelle en secondes UTC
+      const adjustedTime = currentTimeUTC + totalSeconds; // Temps ajusté
 
-        // Mettre à jour Supabase
-        const { error } = await supabase
-          .from("machines")
-          .update({
-            is_running: true,
-            remaining_time: totalSeconds,
-          })
-          .eq("id", id);
-
-        if (error) {
-          console.error("Erreur lors de la mise à jour :", error);
-          alert("Erreur : impossible de démarrer la machine.");
-        }
-      } else {
-        alert("Veuillez indiquer une durée valide !");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Une erreur est survenue.");
-    }
-  };
-
-  const handleStop = async () => {
-    try {
-      setIsRunning(false);
-      setRemainingTime(0);
+      setIsRunning(true);
+      setRemainingTime(totalSeconds);
 
       // Mettre à jour Supabase
       const { error } = await supabase
         .from("machines")
         .update({
-          is_running: false,
-          remaining_time: 0,
+          is_running: true,
+          remaining_time: adjustedTime, // Enregistrer en UTC
         })
         .eq("id", id);
 
       if (error) {
-        console.error("Erreur lors de l'arrêt :", error);
-        alert("Erreur : impossible d'arrêter la machine.");
+        console.error("Erreur lors de la mise à jour :", error);
       }
-    } catch (err) {
-      console.error(err);
-      alert("Une erreur est survenue.");
+    } else {
+      alert("Veuillez indiquer une durée valide !");
+    }
+  };
+
+  const handleStop = async () => {
+    setIsRunning(false);
+    setRemainingTime(0);
+
+    // Mettre à jour Supabase
+    const { error } = await supabase
+      .from("machines")
+      .update({
+        is_running: false,
+        remaining_time: 0,
+      })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Erreur lors de l'arrêt :", error);
     }
   };
 
