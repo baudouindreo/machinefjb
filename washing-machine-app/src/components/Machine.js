@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 
 function Machine({ name }) {
   const [isRunning, setIsRunning] = useState(false);
-  const [hours, setHours] = useState(0);
-  const [minutes, setMinutes] = useState(0);
+  const [hours, setHours] = useState(""); // Initialement vide
+  const [minutes, setMinutes] = useState(""); // Initialement vide
   const [remainingTime, setRemainingTime] = useState(0);
 
   useEffect(() => {
@@ -20,7 +20,10 @@ function Machine({ name }) {
   }, [isRunning, remainingTime]);
 
   const handleStart = () => {
-    const totalSeconds = hours * 3600 + minutes * 60;
+    const totalHours = parseInt(hours, 10) || 0; // Convertit en entier ou 0 si vide
+    const totalMinutes = parseInt(minutes, 10) || 0; // Convertit en entier ou 0 si vide
+    const totalSeconds = totalHours * 3600 + totalMinutes * 60;
+
     if (totalSeconds > 0) {
       setRemainingTime(totalSeconds);
       setIsRunning(true);
@@ -56,7 +59,7 @@ function Machine({ name }) {
           type="number"
           placeholder="Heures"
           value={hours}
-          onChange={(e) => setHours(Number(e.target.value))}
+          onChange={(e) => setHours(e.target.value)}
           disabled={isRunning}
           min="0"
         />
@@ -65,7 +68,7 @@ function Machine({ name }) {
           type="number"
           placeholder="Minutes"
           value={minutes}
-          onChange={(e) => setMinutes(Number(e.target.value))}
+          onChange={(e) => setMinutes(e.target.value)}
           disabled={isRunning}
           min="0"
         />
