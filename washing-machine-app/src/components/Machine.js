@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import supabase from "../supabaseClient";
 
 function Machine({ name, id }) {
@@ -6,6 +6,25 @@ function Machine({ name, id }) {
   const [hours, setHours] = useState("");
   const [minutes, setMinutes] = useState("");
   const [remainingTime, setRemainingTime] = useState(0);
+
+  // Fonction pour arrêter la machine, mémorisée avec useCallback
+  const handleStop = useCallback(async () => {
+    setIsRunning(false);
+    setRemainingTime(0);
+
+    // Mettre à jour Supabase
+    const { error } = await supabase
+      .from("machines")
+      .update({
+        is_running: false,
+        remaining_time: 0,
+      })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Erreur lors de l'arrêt :", error);
+    }
+  }, [id]);
 
   useEffect(() => {
     // Charger l'état initial depuis Supabase
@@ -19,8 +38,11 @@ function Machine({ name, id }) {
       if (error) {
         console.error("Erreur lors du chargement des données :", error);
       } else if (data) {
-        setIsRunning(data.is_running);
-        setRemainingTime(data.remaining_time - Math.floor(Date.now() / 1000)); // Ajuster en fonction de l'heure actuelle
+        const currentTime = Math.floor(Date.now() / 1000); // Temps actuel en secondes
+        const timeLeft = Math.max(data.remaining_time - currentTime, 0); // Calculer le temps restant
+
+        setIsRunning(data.is_running && timeLeft > 0); // Machine active uniquement si temps restant > 0
+        setRemainingTime(timeLeft);
       }
     };
 
@@ -30,8 +52,11 @@ function Machine({ name, id }) {
     const subscription = supabase
       .channel("public:machines")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "machines", filter: `id=eq.${id}` }, (payload) => {
-        setIsRunning(payload.new.is_running);
-        setRemainingTime(payload.new.remaining_time - Math.floor(Date.now() / 1000)); // Ajuster en fonction de l'heure actuelle
+        const currentTime = Math.floor(Date.now() / 1000);
+        const timeLeft = Math.max(payload.new.remaining_time - currentTime, 0);
+
+        setIsRunning(payload.new.is_running && timeLeft > 0);
+        setRemainingTime(timeLeft);
       })
       .subscribe();
 
@@ -47,23 +72,17 @@ function Machine({ name, id }) {
         setRemainingTime((time) => {
           const newTime = time - 1;
 
-          // Mettre à jour Supabase
-          supabase
-            .from("machines")
-            .update({
-              remaining_time: Math.max(0, newTime + Math.floor(Date.now() / 1000)),
-              is_running: newTime > 0,
-            })
-            .eq("id", id);
+          if (newTime <= 0) {
+            handleStop(); // Arrêter la machine si le temps est écoulé
+            return 0;
+          }
 
           return newTime;
         });
       }, 1000);
-    } else if (remainingTime === 0) {
-      setIsRunning(false);
     }
     return () => clearInterval(timer);
-  }, [isRunning, remainingTime, id]);
+  }, [isRunning, remainingTime, handleStop]);
 
   const handleStart = async () => {
     const totalHours = parseInt(hours, 10) || 0;
@@ -91,24 +110,6 @@ function Machine({ name, id }) {
       }
     } else {
       alert("Veuillez indiquer une durée valide !");
-    }
-  };
-
-  const handleStop = async () => {
-    setIsRunning(false);
-    setRemainingTime(0);
-
-    // Mettre à jour Supabase
-    const { error } = await supabase
-      .from("machines")
-      .update({
-        is_running: false,
-        remaining_time: 0,
-      })
-      .eq("id", id);
-
-    if (error) {
-      console.error("Erreur lors de l'arrêt :", error);
     }
   };
 
